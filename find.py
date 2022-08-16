@@ -25,12 +25,12 @@ except ImportError:
     HAS_BS = False
 
 CATALOG_URL = 'https://www.catalog.update.microsoft.com/'
-DOWNLOAD_PATTERN = re.compile(r'\[(\d*)\]\.url = [\"\'](http[s]?://w{0,3}.?download\.windowsupdate\.com/[^\'\"]*)')
+DOWNLOAD_PATTERN = DOWNLOAD_PATTERN = re.compile(r'\[(\d*)\]\.url = [\"\'](http[s]?://.*download\.windowsupdate\.com/[^\'\"]*)')
 PRODUCT_SPLIT_PATTERN = re.compile(r',(?=[^\s])')
 
 @contextlib.contextmanager
 def urlopen(*args, **kwargs):
-    resp = open_url(*args, http_agent='packer-windoze/%s' % __name__, **kwargs)
+    resp = open_url(*args, http_agent='packer-windoze/%s' % __name__, timeout=100,**kwargs)
     try:
         yield resp
     finally:
@@ -240,8 +240,8 @@ class WindowsUpdate:
                 with urlopen('%s/ScopedViewInline.aspx?updateid=%s' % (CATALOG_URL, str(self.id)),
                              headers=headers) as resp:
                     resp_text = to_text(resp.read()).lstrip()
-                print(resp_text)
-                print(resp.code)
+                #print(resp_text)
+                #print(resp.code)
                 self._details = BeautifulSoup(resp_text, 'html.parser')
                 if self._details.find('ctl00_catalogBody_textNoUpdate'):
                     raise 'no-update'
@@ -322,11 +322,17 @@ def find_updates(search, all_updates=False, sort=None, sort_reverse=False, data=
         for update in find_updates(search, True, data=data):
             yield update
 
-device = "1912"
-subsys = "86941043"
-for k in find_updates("PCI\VEN_8086&DEV_1912", all_updates=True, sort="Version"):
+device = "9a78"
+#subsys = "86941043"
+for k in find_updates("PCI\VEN_8086&DEV_0162", all_updates=True, sort="Version"):
+#for k in find_updates("PCI\VEN_8086&DEV_9A78 27.20.100.9268", all_updates=True, sort="Version"):
+#for k in find_updates("PCI\VEN_8086&DEV_3E9b\SUBSYS_086f1028", all_updates=True, sort="Version"):
+#for k in find_updates("PCI\VEN_8086&DEV_%s" % device, all_updates=True, sort="Version", sort_reverse=True):
+#for k in find_updates("26.20.100.7323 DEV_%s" % device, all_updates=True, sort="Version", sort_reverse=True):
+#for k in find_updates("20.19.15.4390", all_updates=True, sort="Version", sort_reverse=True):
     print(k)
-    print(k.architecture, k.download_url)
+    print(k.version, k.architecture, k.download_url)
+    print(k.hw_ids)
     for i in k.hw_ids:
         if device in i:
             print("\t", i)
